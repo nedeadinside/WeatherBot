@@ -1,5 +1,5 @@
-from aiogram import executor, Dispatcher, Bot
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import executor, Dispatcher, Bot
 from app import register_state_handlers
 from config import BOT_TOKEN
 import logging

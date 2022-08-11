@@ -18,6 +18,3 @@ def url_request(latitude, longitude):
     url = f'https://api.openweathermap.org/data/3.0/onecall?lat={latitude}&lon={longitude}&exclude=daily&appid={WEATHER_API_KEY}'
     response = requests.get(url=url)
     return response.json()
-
-
-

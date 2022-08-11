@@ -92,6 +92,7 @@ async def finish_state(message: types.Message, state: FSMContext):
 
 
 async def hello(message: types.Message):
+    # Добавить проверку есть ли юзер в БД
     await message.answer('Привет, запускаю стейт')
     await start_state(message)
 
