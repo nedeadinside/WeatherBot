@@ -1,8 +1,8 @@
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from config import BOT_TOKEN, db_name, WEATHER_API_KEY
+from request import get_location, get_weather
 from aiogram import Dispatcher, types, Bot
 from aiogram.dispatcher import FSMContext
-from config import BOT_TOKEN, db_name
-from request import get_location
 from db import Database
 import datetime
 
@@ -113,6 +113,24 @@ async def hello(message: types.Message):
     else:
         await message.answer('Привет, запускаю стейт')
         await start_state(message)
+
+
+async def commands_cathc(message: types.Message):
+    commands = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+    if message.text in commands:
+        if message.text == commands[0]:
+            data = db.get_user_info(message.from_user.id)
+
+            await message.answer('Вот прогноз погоды на сегодня:')
+            await message.answer(get_weather(data['latitude'], data['longitude'], api_key=WEATHER_API_KEY))
+        elif message.text == commands[1]:
+            # Пишем FSM в 2 действия, позже связываем с бд
+            pass
+        else:
+            # Пишем FSM в 2 действия, позже связываем с бд
+            pass
+    else:
+        await message.answer('Я не понял тебя, пожалуйста воспользуйся кнопками для ответа!')
 
 
 def register_state_handlers(dp: Dispatcher):
