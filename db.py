@@ -13,8 +13,8 @@ class Database:
         return bool(len(result))
 
     def create_user(self, user_id, user_info: dict):
-        lat = round(user_info['lat'], 2)
-        lon = round(user_info['lon'], 2)
+        lat = user_info['lat']
+        lon = user_info['lon']
         time = user_info['time']
         with self.connection:
             return self.cursor.execute(
