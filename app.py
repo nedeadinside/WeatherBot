@@ -59,8 +59,27 @@ async def get_user_location(message):
         return latitude, longitude
 
 
+async def get_time(message, state):
+    try:
+        if time_check(message.text) is True:
+            await state.update_data(time=message.text)
+            state_data = await state.get_data()
+            await state.finish()
+            return state_data
+
+        else:
+            return
+
+    except Exception as e:
+        print(e)
+        return
+
+
 async def commands_catch(message: types.Message):
     commands = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*commands)
+
     if message.text in commands:
         if message.text == commands[0]:
             data = db.get_user_info(message.from_user.id)
@@ -72,7 +91,7 @@ async def commands_catch(message: types.Message):
         else:
             await change_time_state(message)
     else:
-        await message.answer('Я не понял тебя, пожалуйста воспользуйся кнопками для ответа!')
+        await message.answer('Я не понял тебя, пожалуйста воспользуйся кнопками для ответа!', reply_markup=keyboard)
 
 
 async def hello(message: types.Message):
@@ -86,14 +105,17 @@ async def hello(message: types.Message):
         await start_state(message)
 
 
-#################################################################################################################
 async def start_state(message: types.Message):
     await location_markup(message)
     await Menu.get_location.set()
 
 
 async def menu_user_location(message: types.Message, state: FSMContext):
-    latitude, longitude = await get_user_location(message)
+    if await get_user_location(message) is None:
+        return
+    else:
+        latitude, longitude = await get_user_location(message)
+
     markup = types.ReplyKeyboardRemove()
     await message.answer(
         'Отлично, теперь давай определимся с временем, когда я буду отправлять тебе погоду.\n\n' +
@@ -118,103 +140,16 @@ async def user_location_button(message: types.Location, state: FSMContext):
     )
 
 
-async def menu_get_time(message: types.Message, state: FSMContext):
-    markup = types.ReplyKeyboardRemove()
-    try:
-        if time_check(message.text) is True:
-            await state.update_data(time=message.text)
-
-            state_data = await state.get_data()
-            await state.finish()
-
-            db_write(uid=message.from_user.id, user_state=state_data)
-
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
-            keyboard.add(*buttons)
-            await message.answer(
-                'Я сохранил время, теперь каждый день тебе будет отправляться прогноз погоды :)',
-                reply_markup=keyboard
-                )
-
-        else:
-            await message.answer('Вы ввели некорректное время!', reply_markup=markup)
-            return
-
-    except Exception as e:
-        print(e)
-        await message.answer('Вы ввели некорректное время!', reply_markup=markup)
-        return
-
-
-async def finish_change_time(message: types.Message, state: FSMContext):
-    markup = types.ReplyKeyboardRemove()
-    try:
-        if time_check(message.text) is True:
-            await state.update_data(time=message.text)
-
-            state_data = await state.get_data()
-            await state.finish()
-
-            db.rewrite_time(user_id=message.from_user.id, time=state_data['time'])
-
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
-            keyboard.add(*buttons)
-            await message.answer('Я сохранил время:)', reply_markup=keyboard)
-
-        else:
-            await message.answer('Вы ввели некорректное время!', reply_markup=markup)
-            return
-
-    except Exception as e:
-        print(e)
-        await message.answer('Вы ввели некорректное время!', reply_markup=markup)
-        return
-
-
-def register_state_handlers(dp: Dispatcher):
-    dp.register_message_handler(hello, commands='start')
-    dp.register_message_handler(commands_catch)
-
-    dp.register_message_handler(get_location_state, state='*', commands='resetlocation')
-    dp.register_message_handler(change_user_location, state=ChangeLocation.get_city)
-    dp.register_message_handler(change_user_location_button, state=ChangeLocation.get_city, content_types=['location'])
-
-    dp.register_message_handler(change_time_state, state='*', commands='resettime')
-    dp.register_message_handler(finish_change_time, state=ChangeTime.get_time)
-
-    dp.register_message_handler(start_state, state='*', commands='resetsettings')
-    dp.register_message_handler(menu_user_location, state=Menu.get_location)
-    dp.register_message_handler(user_location_button, state=Menu.get_location, content_types=['location'])
-    dp.register_message_handler(menu_get_time, state=Menu.get_time)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 async def get_location_state(message: types.Message):
     await location_markup(message)
     await ChangeLocation.get_city.set()
 
 
 async def change_user_location(message: types.Message, state: FSMContext):
-    latitude, longitude = get_user_location(message)
+    if await get_user_location(message) is None:
+        return
+    else:
+        latitude, longitude = await get_user_location(message)
 
     await state.update_data(lat=latitude, lon=longitude)
     data = await state.get_data()
@@ -247,3 +182,55 @@ async def change_time_state(message: types.Message):
     await message.answer('Давай определимся с временем, когда я буду отправлять тебе погоду.\n\n' +
                          'Отправь время по МСК в 24 часовом формате: hh:mm', reply_markup=markup)
     await ChangeTime.get_time.set()
+
+
+async def menu_get_time(message: types.Message, state: FSMContext):
+    text = 'Я сохранил время, теперь каждый день тебе будет отправляться прогноз погоды :)'
+
+    if await get_time(message, state) is None:
+        markup = types.ReplyKeyboardRemove()
+        await message.answer('Вы некорректно ввели время!', reply_markup=markup)
+        return
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+        keyboard.add(*buttons)
+        await message.answer(text=text, reply_markup=keyboard)
+
+        state_data = await get_time(message, state)
+
+        db_write(uid=message.from_user.id, user_state=state_data)
+
+
+async def finish_change_time(message: types.Message, state: FSMContext):
+    text = 'Я сохранил время:)'
+    if await get_time(message, state) is None:
+        markup = types.ReplyKeyboardRemove()
+        await message.answer('Вы некорректно ввели время!', reply_markup=markup)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+        keyboard.add(*buttons)
+
+        await message.answer(text=text, reply_markup=keyboard)
+
+        state_data = await get_time(message, state)
+
+        db.rewrite_time(user_id=message.from_user.id, time=state_data['time'])
+
+
+def register_state_handlers(dp: Dispatcher):
+    dp.register_message_handler(hello, commands='start')
+    dp.register_message_handler(commands_catch)
+
+    dp.register_message_handler(get_location_state, state='*', commands='resetlocation')
+    dp.register_message_handler(change_user_location, state=ChangeLocation.get_city)
+    dp.register_message_handler(change_user_location_button, state=ChangeLocation.get_city, content_types=['location'])
+
+    dp.register_message_handler(change_time_state, state='*', commands='resettime')
+    dp.register_message_handler(finish_change_time, state=ChangeTime.get_time)
+
+    dp.register_message_handler(start_state, state='*', commands='resetsettings')
+    dp.register_message_handler(menu_user_location, state=Menu.get_location)
+    dp.register_message_handler(user_location_button, state=Menu.get_location, content_types=['location'])
+    dp.register_message_handler(menu_get_time, state=Menu.get_time)
