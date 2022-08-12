@@ -24,7 +24,7 @@ class Database:
     def get_user_info(self, user_id):
         with self.connection:
             values = self.cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchall()[0]
-            keys = ('user_id', 'latitude', 'longitude', 'time')
+            keys = ('id', 'user_id', 'latitude', 'longitude', 'time')
             return {keys[i]: values[i] for i in range(len(values))}
 
     def delete_user(self, user_id):
