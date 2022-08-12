@@ -1,7 +1,9 @@
-from config import USER_AGENT
 from geopy.geocoders import Nominatim
+from config import USER_AGENT
 import requests
 import datetime
+
+
 geolocation = Nominatim(user_agent=USER_AGENT)
 
 
@@ -15,7 +17,7 @@ def get_location(city):
 
 
 def get_weather(latitude: float, longitude: float, api_key: str):
-    url = 'https://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&appid=' + \
+    url = 'https://api.openweathermap.org/data/2.5/forecast?units=metric&lang=ru&appid=' + \
           f'{api_key}&lat={latitude}&lon={longitude}'
     response = requests.get(url=url)
     data = response.json()

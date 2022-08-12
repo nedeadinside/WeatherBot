@@ -19,7 +19,7 @@ async def get_datetime():
     msk_time = '{:02d}:{:02d}'.format(msk_time.hour, msk_time.minute)
     users = db.get_time(msk_time)
     for user in users:
-        await bot.send_message(chat_id=user['user_id'], text='Привет! Прогноз погоды на сегодня:')
+        await bot.send_message(chat_id=user['user_id'], text='Привет! Погода сейчас:')
         await bot.send_message(chat_id=user['user_id'], text=get_weather(
             latitude=user['latitude'],
             longitude=user['longitude'],

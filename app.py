@@ -84,7 +84,7 @@ async def commands_catch(message: types.Message):
         if message.text == commands[0]:
             data = db.get_user_info(message.from_user.id)
 
-            await message.answer('Вот прогноз погоды на сегодня:')
+            await message.answer('Погода сейчас:')
             await message.answer(get_weather(data['latitude'], data['longitude'], api_key=WEATHER_API_KEY))
         elif message.text == commands[1]:
             await get_location_state(message)
@@ -101,7 +101,7 @@ async def hello(message: types.Message):
         keyboard.add(*buttons)
         await message.answer('Воспользуйся кнопками, чтобы посмотреть интересующую информацию', reply_markup=keyboard)
     else:
-        await message.answer('Привет, запускаю стейт')
+        await message.answer('Привет, этот бот показывает погоду в интересующем на данный момент!')
         await start_state(message)
 
 
@@ -185,7 +185,7 @@ async def change_time_state(message: types.Message):
 
 
 async def menu_get_time(message: types.Message, state: FSMContext):
-    text = 'Я сохранил время, теперь каждый день тебе будет отправляться прогноз погоды :)'
+    text = 'Я сохранил время, теперь каждый день тебе будет отправляться погода :)'
 
     if await get_time(message, state) is None:
         markup = types.ReplyKeyboardRemove()
