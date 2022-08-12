@@ -1,8 +1,8 @@
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from app import register_state_handlers, BOT_TOKEN
 from aiogram import executor, Dispatcher, Bot
-from app import register_state_handlers
-from config import BOT_TOKEN
 import logging
+
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())

@@ -1,11 +1,13 @@
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import Dispatcher, types, Bot
 from aiogram.dispatcher import FSMContext
+from config import BOT_TOKEN, db_name
 from request import get_location
-from config import BOT_TOKEN
+from db import Database
 import datetime
 
 
+db = Database(db_name)
 bot = Bot(BOT_TOKEN)
 
 
@@ -22,6 +24,14 @@ def time_check(user_time):
 class Menu(StatesGroup):
     menu_state = State()
     finish_state = State()
+
+
+def db_write(uid, user_state):
+    if db.user_exist(user_id=uid) is True:
+        db.delete_user(user_id=uid)
+        db.create_user(user_id=uid, user_info=user_state)
+    else:
+        db.create_user(user_id=uid, user_info=user_state)
 
 
 async def start_state(message: types.Message):
@@ -70,8 +80,11 @@ async def finish_state(message: types.Message, state: FSMContext):
     try:
         if time_check(message.text) is True:
             await state.update_data(time=message.text)
-            # СОХРАНИТЬ В БД ДАННЫЕ ИЗ СТЕЙТА
-            await Menu.next()
+
+            state_data = await state.get_data()
+            await state.finish()
+
+            db_write(uid=message.from_user.id, user_state=state_data)
 
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
@@ -92,9 +105,14 @@ async def finish_state(message: types.Message, state: FSMContext):
 
 
 async def hello(message: types.Message):
-    # Добавить проверку есть ли юзер в БД
-    await message.answer('Привет, запускаю стейт')
-    await start_state(message)
+    if db.user_exist(message.from_user.id) is True:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+        keyboard.add(*buttons)
+        await message.answer('Воспользуйся кнопками, чтобы посмотреть интересующую информацию', reply_markup=keyboard)
+    else:
+        await message.answer('Привет, запускаю стейт')
+        await start_state(message)
 
 
 def register_state_handlers(dp: Dispatcher):
