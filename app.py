@@ -1,6 +1,6 @@
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from request import get_location, get_weather, get_forecast
 from config import BOT_TOKEN, db_name, WEATHER_API_KEY
-from request import get_location, get_weather
 from aiogram import Dispatcher, types, Bot
 from aiogram.dispatcher import FSMContext
 from db import Database
@@ -16,9 +16,8 @@ def time_check(user_time):
     minutes = int(user_time[3:])
 
     time = datetime.time(hours, minutes)
-    start = datetime.time(0, 0)
-    end = datetime.time(23, 59)
-    return start <= time <= end
+
+    return time
 
 
 class Menu(StatesGroup):
@@ -61,9 +60,12 @@ async def get_user_location(message):
 
 
 async def get_time(message, state):
+    start = datetime.time(0, 0)
+    end = datetime.time(23, 59)
     try:
-        if time_check(message.text) is True:
-            await state.update_data(time=message.text)
+        time = time_check(message.text)
+        if start <= time <= end:
+            await state.update_data(time=str(time)[:5])
             state_data = await state.get_data()
             await state.finish()
             return state_data
@@ -77,7 +79,7 @@ async def get_time(message, state):
 
 
 async def commands_catch(message: types.Message):
-    commands = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+    commands = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*commands)
 
@@ -87,7 +89,14 @@ async def commands_catch(message: types.Message):
 
             await message.answer('Погода сейчас:')
             await message.answer(get_weather(data['latitude'], data['longitude'], api_key=WEATHER_API_KEY))
+
         elif message.text == commands[1]:
+            data = db.get_user_info(message.from_user.id)
+
+            await message.answer('Прогноз погоды:')
+            await message.answer(get_forecast(data['latitude'], data['longitude'], api_key=WEATHER_API_KEY))
+
+        elif message.text == commands[2]:
             await get_location_state(message)
         else:
             await change_time_state(message)
@@ -98,7 +107,7 @@ async def commands_catch(message: types.Message):
 async def hello(message: types.Message):
     if db.user_exist(message.from_user.id) is True:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+        buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
         keyboard.add(*buttons)
         await message.answer('Воспользуйся кнопками, чтобы посмотреть интересующую информацию', reply_markup=keyboard)
     else:
@@ -149,14 +158,17 @@ async def get_location_state(message: types.Message):
 async def menu_get_time(message: types.Message, state: FSMContext):
     markup = types.ReplyKeyboardRemove()
     text = 'Я сохранил время, теперь каждый день тебе будет отправляться погода :)'
+    start = datetime.time(0, 0)
+    end = datetime.time(23, 59)
     try:
-        if time_check(message.text) is True:
-            await state.update_data(time=message.text)
+        time = time_check(message.text)
+        if start <= time <= end:
+            await state.update_data(time=str(time)[:5])
             state_data = await state.get_data()
             await state.finish()
 
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+            buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
             keyboard.add(*buttons)
             await message.answer(text=text, reply_markup=keyboard)
 
@@ -184,7 +196,7 @@ async def change_user_location(message: types.Message, state: FSMContext):
     db.rewrite_location(message.from_user.id, data['lat'], data['lon'])
 
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+    buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
     keyboard.add(*buttons)
     await message.answer('Локация изменена!', reply_markup=keyboard)
 
@@ -198,7 +210,7 @@ async def change_user_location_button(message: types.Location, state: FSMContext
     db.rewrite_location(user_id, data['lat'], data['lon'])
 
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+    buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
     keyboard.add(*buttons)
     await bot.send_message(chat_id=user_id, text='Локация изменена!', reply_markup=keyboard)
 
@@ -213,14 +225,17 @@ async def change_time_state(message: types.Message):
 async def finish_change_time(message: types.Message, state: FSMContext):
     text = 'Я сохранил время:)'
     markup = types.ReplyKeyboardRemove()
+    start = datetime.time(0, 0)
+    end = datetime.time(23, 59)
     try:
-        if time_check(message.text) is True:
-            await state.update_data(time=message.text)
+        time = time_check(message.text)
+        if start <= time <= end:
+            await state.update_data(time=str(time)[:5])
             state_data = await state.get_data()
             await state.finish()
 
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            buttons = ['Посмотреть погоду', 'Изменить город', 'Изменить время']
+            buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
             keyboard.add(*buttons)
 
             await message.answer(text=text, reply_markup=keyboard)
