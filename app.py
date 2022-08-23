@@ -79,24 +79,23 @@ async def get_time(message, state):
 
 
 async def commands_catch(message: types.Message):
-    commands = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*commands)
+    buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True).row(*buttons[:2]).add(*buttons[2:])
 
-    if message.text in commands:
-        if message.text == commands[0]:
+    if message.text in buttons:
+        if message.text == buttons[0]:
             data = db.get_user_info(message.from_user.id)
 
             await message.answer('Погода сейчас:')
             await message.answer(get_weather(data['latitude'], data['longitude'], api_key=WEATHER_API_KEY))
 
-        elif message.text == commands[1]:
+        elif message.text == buttons[1]:
             data = db.get_user_info(message.from_user.id)
 
             await message.answer('Прогноз погоды:')
             await message.answer(get_forecast(data['latitude'], data['longitude'], api_key=WEATHER_API_KEY))
 
-        elif message.text == commands[2]:
+        elif message.text == buttons[2]:
             await get_location_state(message)
         else:
             await change_time_state(message)
@@ -106,9 +105,8 @@ async def commands_catch(message: types.Message):
 
 async def hello(message: types.Message):
     if db.user_exist(message.from_user.id) is True:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
-        keyboard.add(*buttons)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True).row(*buttons[:2]).add(*buttons[2:])
         await message.answer('Воспользуйся кнопками, чтобы посмотреть интересующую информацию', reply_markup=keyboard)
     else:
         await message.answer('Привет, этот бот показывает погоду в интересующем на данный момент городе!')
@@ -167,9 +165,8 @@ async def menu_get_time(message: types.Message, state: FSMContext):
             state_data = await state.get_data()
             await state.finish()
 
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
-            keyboard.add(*buttons)
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True).row(*buttons[:2]).add(*buttons[2:])
             await message.answer(text=text, reply_markup=keyboard)
 
             db_write(uid=message.from_user.id, user_state=state_data)
@@ -195,9 +192,8 @@ async def change_user_location(message: types.Message, state: FSMContext):
 
     db.rewrite_location(message.from_user.id, data['lat'], data['lon'])
 
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
-    keyboard.add(*buttons)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True).row(*buttons[:2]).add(*buttons[2:])
     await message.answer('Локация изменена!', reply_markup=keyboard)
 
 
@@ -209,9 +205,8 @@ async def change_user_location_button(message: types.Location, state: FSMContext
 
     db.rewrite_location(user_id, data['lat'], data['lon'])
 
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
-    keyboard.add(*buttons)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True).row(*buttons[:2]).add(*buttons[2:])
     await bot.send_message(chat_id=user_id, text='Локация изменена!', reply_markup=keyboard)
 
 
@@ -234,10 +229,8 @@ async def finish_change_time(message: types.Message, state: FSMContext):
             state_data = await state.get_data()
             await state.finish()
 
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             buttons = ['Погода сейчас', 'Прогноз погоды', 'Изменить город', 'Изменить время']
-            keyboard.add(*buttons)
-
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True).row(*buttons[:2]).add(*buttons[2:])
             await message.answer(text=text, reply_markup=keyboard)
 
             db.rewrite_time(user_id=message.from_user.id, time=state_data['time'])
